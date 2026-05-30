@@ -45,6 +45,8 @@
         .btn:hover { border-color: var(--text-color); background-color: #f7f7f7; }
         .btn-primary { background-color: var(--accent-color); color: #ffffff; border-color: var(--accent-color); }
         .btn-primary:hover { background-color: #04846b; }
+        .btn-danger { background-color: var(--danger-color); color: #ffffff; border-color: var(--danger-color); }
+        .btn-danger:hover { background-color: #bd2130; }
         .btn-secondary { background-color: transparent; border-color: #ccc; color: var(--text-muted); }
         .btn-secondary:hover { border-color: #666; color: var(--text-color); }
         
@@ -91,8 +93,14 @@
         }
 
         .action-row { display: flex; gap: 12px; align-items: center; }
+        
+        /* 批量管理列表样式优化 */
         .admin-list-section { border-top: 1px dashed #ccc; padding-top: 20px; }
-        .admin-item-row { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 10px 15px; border: 1px solid var(--border-color); border-radius: 4px; margin-bottom: 8px; font-size: 0.85rem; }
+        .admin-batch-control { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .admin-item-list { max-height: 300px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 4px; background: #fff; padding: 5px; }
+        .admin-item-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 15px; border-bottom: 1px solid #f1f1f1; font-size: 0.85rem; }
+        .admin-item-row:last-child { border-bottom: none; }
+        .admin-item-info { display: flex; align-items: center; gap: 10px; }
 
         /* 前台画廊瀑布流 */
         .gallery-container { padding: 0 40px 60px 40px; }
@@ -123,7 +131,7 @@
             justify-content: center; cursor: pointer; font-weight: 500; text-decoration: none; font-size: 0.8rem; gap: 4px;
         }
 
-        /* 智能多媒体放大灯箱（重构底部工具栏，塞入查看灵感词交互） */
+        /* 智能多媒体放大灯箱 */
         .lightbox {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-color: rgba(0, 0, 0, 0.96); z-index: 2000;
@@ -132,13 +140,11 @@
         .lightbox-media-wrapper { max-width: 90%; max-height: 70%; display: flex; justify-content: center; align-items: center; }
         .lightbox img, .lightbox video { max-width: 100%; max-height: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); outline: none; }
         
-        /* 灯箱下方极简信息控制台 */
         .lightbox-panel {
             width: 90%; max-width: 800px; margin-top: 20px; display: flex; flex-direction: column; gap: 12px; color: #fff; text-align: center;
         }
         .lightbox-title { font-size: 1.1rem; font-weight: 400; letter-spacing: 0.5px; }
         
-        /* 隐藏的提示词展示槽（通过 JavaScript 控制优雅淡入） */
         .lightbox-prompt-box {
             font-size: 0.85rem; color: #888; background: rgba(255,255,255,0.04);
             padding: 10px 20px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05);
@@ -178,23 +184,21 @@
         </div>
     </section>
 
-    <!-- 分类导航栏 -->
     <div class="category-bar" id="categoryBar"></div>
 
-    <!-- Admin Panel 控制台（内置提示词资产配置口） -->
     <div id="adminPanel">
         <div class="panel-top-row">
-            <div class="panel-header">独立创作者控制台（多媒体资产配置）</div>
+            <div class="panel-header" style="font-weight: bold; color: var(--text-color);">独立创作者控制台（多媒体资产批量流处理）</div>
             <button style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:#999;" onclick="closeAdminPanelDirectly()">×</button>
         </div>
         
         <div class="form-row">
             <div class="form-group">
-                <label>选择媒体文件 (图片，或者 MJ 视频 MP4)</label>
-                <input type="file" id="mediaFileInput" accept="image/*,video/*">
+                <label style="color:var(--accent-color);">选择媒体文件 (支持按住 Ctrl/Shift 键多选批量上传) *</label>
+                <input type="file" id="mediaFileInput" accept="image/*,video/*" multiple>
             </div>
             <div class="form-group">
-                <label>高清原图/视频网盘外链</label>
+                <label>高清原图/视频网盘外链 (批量上传时共用或置空)</label>
                 <input type="text" id="cloudDriveUrl" placeholder="输入直达提取观看链接">
             </div>
         </div>
@@ -225,57 +229,56 @@
                 </select>
             </div>
             <div class="form-group">
-                <label>中文作品名称</label>
-                <input type="text" id="inputTitleZh" placeholder="输入中文标题">
+                <label>中文作品核心名称 (多图上传时会自动在其后添加序号)</label>
+                <input type="text" id="inputTitleZh" placeholder="输入中文标题，如：机械觉醒">
             </div>
         </div>
-        <!-- 💡 核心升级：后台无缝留出 Midjourney 核心提示词的填写资产口 -->
         <div class="form-row">
             <div class="form-group">
-                <label>中文核心提示词（灵感词）</label>
+                <label>英文作品核心名称 (English Title Baseline)</label>
+                <input type="text" id="inputTitleEn" placeholder="Enter English Title Baseline, e.g., Mecha Rising">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>中文核心提示词（灵感词，本批共用）</label>
                 <input type="text" id="promptZh" placeholder="例如：赛博朋克风格，霓虹错落，极致光影 --v 6.0">
             </div>
             <div class="form-group">
-                <label>英文核心提示词 (English Prompts)</label>
+                <label>英文核心提示词 (English Prompts, 本批共用)</label>
                 <input type="text" id="promptEn" placeholder="e.g., Cyberpunk cinematic neon street lights --v 6.0">
-            </div>
-        </div>
-        <div class="form-row">
-            <div class="form-group">
-                <label>英文作品名称 (English Title)</label>
-                <input type="text" id="inputTitleEn" placeholder="Enter English Title">
             </div>
         </div>
         
         <div class="action-row">
-            <button class="btn btn-primary" onclick="processAndPublish()">解析并智能发布</button>
+            <button class="btn btn-primary" onclick="processAndPublishBatch()">⚡ 开始批量流水线解析发布</button>
             <button class="btn btn-secondary" onclick="closeAdminPanelDirectly()">关闭后台 / Close</button>
         </div>
 
         <div class="admin-list-section">
-            <div class="admin-list-title">⚠️ 线上资产下架区</div>
-            <div id="adminItemsConsole"></div>
+            <div class="admin-batch-control">
+                <div class="admin-list-title" style="font-weight: 600; color: var(--text-muted);">⚠️ 线上资产批量下架中心</div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn id="btnSelectAll" onclick="toggleSelectAllItems(true)" style="padding: 4px 10px; font-size: 0.8rem;">全选</button>
+                    <button class="btn" onclick="toggleSelectAllItems(false)" style="padding: 4px 10px; font-size: 0.8rem;">取消</button>
+                    <button class="btn btn-danger" onclick="batchDeleteSelectedItems()" style="padding: 4px 10px; font-size: 0.8rem; font-weight: bold;">❌ 批量删除选中资产</button>
+                </div>
+            </div>
+            <div class="admin-item-list" id="adminItemsConsole"></div>
         </div>
     </div>
 
-    <!-- 前台画廊主体 -->
     <div class="gallery-container">
         <div class="gallery-columns" id="galleryBox"></div>
     </div>
 
-    <!-- 沉浸式多媒体放大灯箱（内置默认隐藏、点击后高级微弱淡入的提示词交互模块） -->
     <div class="lightbox" id="mediaLightbox" onclick="closeLightbox(event)">
         <span class="lightbox-close" onclick="closeLightboxForce()">×</span>
-        
         <div class="lightbox-media-wrapper" id="lightboxContent"></div>
-        
         <div class="lightbox-panel">
             <div class="lightbox-title" id="lightboxTitle"></div>
-            <!-- 提示词优雅承载展示槽 -->
             <div class="lightbox-prompt-box" id="lightboxPromptBox"></div>
-            
             <div class="lightbox-action-row">
-                <!-- 核心互动交互点一键控制显示 -->
                 <button class="btn-lightbox" id="btnViewPrompt" onclick="revealPrompt()">💡 查看灵感词 / View Prompt</button>
                 <a href="#" id="lightboxDownloadBtn" target="_blank" class="btn-lightbox" style="text-decoration:none; display:inline-block;">↓ 原画/原片下载</a>
             </div>
@@ -288,9 +291,9 @@
         let currentLang = 'zh';
         let currentCategory = '全部 / ALL';
         let searchQuery = '';
-        let activeItemIdInLightbox = null; // 记录当前正在灯箱放大看的是哪张图
+        let activeItemIdInLightbox = null;
 
-        // 更新核心内存储备库，并配置好专属默认隐藏提示词示例数据
+        // 初始化数据
         let imageItems = [
             {
                 id: 1, type: "image", category: "赛博朋克 / Cyberpunk",
@@ -343,18 +346,18 @@
         }
         function closeAdminPanelDirectly() { document.getElementById('adminPanel').style.display = 'none'; }
 
-        // 多媒体智能一键点击放大逻辑
+        // 灯箱开启
         function openMediaLightbox(id) {
             const item = imageItems.find(i => i.id === id);
             if (!item) return;
 
-            activeItemIdInLightbox = id; // 锚定当前大图ID
+            activeItemIdInLightbox = id;
             const lightbox = document.getElementById('mediaLightbox');
             const contentContainer = document.getElementById('lightboxContent');
             const pbox = document.getElementById('lightboxPromptBox');
             
             contentContainer.innerHTML = ''; 
-            pbox.style.display = 'none'; // ⚙ 核心：每次点开大图，提示词框默认完全归零并隐藏
+            pbox.style.display = 'none';
             pbox.style.opacity = '0';
 
             if (item.type === 'video') {
@@ -363,7 +366,6 @@
                 contentContainer.innerHTML = `<img src="${item.media_src}" alt="预览">`;
             }
 
-            // 同步渲染底部标题和下载分流
             document.getElementById('lightboxTitle').innerText = currentLang === 'zh' ? item.title_zh : item.title_en;
             document.getElementById('lightboxDownloadBtn').href = item.drive_link;
             document.getElementById('lightboxDownloadBtn').innerText = item.type === 'video' ? (currentLang === 'zh' ? "↓ 原片下载" : "↓ Get Video") : (currentLang === 'zh' ? "↓ 原画下载" : "↓ High-Res");
@@ -372,7 +374,6 @@
             document.body.style.overflow = 'hidden';
         }
 
-        // 交互动作：点击后微弱且优雅地将提示词资产向客户淡出显示
         function revealPrompt() {
             const item = imageItems.find(i => i.id === activeItemIdInLightbox);
             if (!item) return;
@@ -382,11 +383,7 @@
             
             pbox.innerText = activePromptText || (currentLang === 'zh' ? "该作品创作者未配置公开提示词。" : "No prompt available for this artwork.");
             pbox.style.display = 'block';
-            
-            // 用极短微秒延时触发 CSS 的高保真淡入
-            setTimeout(() => {
-                pbox.style.opacity = '1';
-            }, 50);
+            setTimeout(() => { pbox.style.opacity = '1'; }, 50);
         }
 
         function closeLightbox(e) {
@@ -401,100 +398,155 @@
             activeItemIdInLightbox = null;
         }
 
+        // 渲染后台资产列表（增加了 Checkbox 批量选择支持）
         function renderAdminConsole() {
             const consoleBox = document.getElementById('adminItemsConsole'); consoleBox.innerHTML = '';
-            if(imageItems.length === 0) { consoleBox.innerHTML = '<p style="font-size:0.8rem;color:#999;text-align:center;">暂无线上资产</p>'; return; }
+            if(imageItems.length === 0) { consoleBox.innerHTML = '<p style="font-size:0.8rem;color:#999;text-align:center;padding:20px;">暂无线上资产</p>'; return; }
+            
             imageItems.forEach(item => {
                 const title = currentLang === 'zh' ? item.title_zh : item.title_en;
                 consoleBox.innerHTML += `
                     <div class="admin-item-row">
-                        <span>[${item.category.split(' / ')[0]}] <strong>${title}</strong></span>
+                        <div class="admin-item-info">
+                            <input type="checkbox" class="admin-item-select" value="${item.id}">
+                            <span>[${item.category.split(' / ')[0]}] <strong>${title}</strong></span>
+                        </div>
                         <button onclick="secureDeleteItem(${item.id})" style="background-color:var(--danger-color);color:#fff;border:none;padding:4px 12px;border-radius:3px;cursor:pointer;font-size:0.8rem;">安全下架</button>
                     </div>
                 `;
             });
         }
 
+        // 单个删除
         function secureDeleteItem(id) {
             if (confirm("确定要永久下架该创意资产吗？")) {
                 imageItems = imageItems.filter(item => item.id !== id);
-                renderGallery(); closeAdminPanelDirectly();
-                alert("下架成功，系统已自动闭环退出。");
+                renderGallery(); renderAdminConsole();
+                alert("下架成功。");
             }
         }
 
-        function processAndPublish() {
+        // 全选 / 反选控制
+        function toggleSelectAllItems(isSelected) {
+            const checkboxes = document.querySelectorAll('.admin-item-select');
+            checkboxes.forEach(cb => cb.checked = isSelected);
+        }
+
+        // ⚙ 核心批量删除逻辑
+        function batchDeleteSelectedItems() {
+            const checkboxes = document.querySelectorAll('.admin-item-select:checked');
+            if (checkboxes.length === 0) { alert("请先在下方资产列表中勾选需要下架的项！"); return; }
+            
+            if (confirm(`确定要永久一键下架这 ${checkboxes.length} 个创意资产吗？`)) {
+                const idsToDelete = Array.from(checkboxes).map(cb => parseInt(cb.value));
+                imageItems = imageItems.filter(item => !idsToDelete.includes(item.id));
+                renderGallery(); renderAdminConsole();
+                alert(`成功批量下架 ${idsToDelete.length} 个资产！`);
+            }
+        }
+
+        // ⚡ 核心：批量流水线并行处理机制
+        function processAndPublishBatch() {
             const fileInput = document.getElementById('mediaFileInput');
             const driveUrl = document.getElementById('cloudDriveUrl').value || "#";
-            const titleZh = document.getElementById('inputTitleZh').value || "未命名艺术资产";
-            const titleEn = document.getElementById('inputTitleEn').value || "Untitled Masterpiece";
+            const baseTitleZh = document.getElementById('inputTitleZh').value || "未命名 AI 资产";
+            const baseTitleEn = document.getElementById('inputTitleEn').value || "Untitled AI Art";
             const pzh = document.getElementById('promptZh').value || "";
             const pen = document.getElementById('promptEn').value || "";
             const wmText = document.getElementById('watermarkText').value || "visualsstudio.com";
             const selectedFont = document.getElementById('watermarkFont').value;
             const selectedCat = document.getElementById('inputCategory').value;
 
-            if (!fileInput.files[0]) { alert("请先选择图片或短视频文件！"); return; }
+            const files = fileInput.files;
+            if (files.length === 0) { alert("请先选择图片或短视频文件！支持多选。"); return; }
 
-            const file = fileInput.files[0];
-            const isVideoFile = file.type.startsWith('video/');
+            let processedCount = 0;
+            const totalFiles = files.length;
 
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = function(e) {
-                const fileDataUrl = e.target.result;
+            // 按照文件选中的反序（或正序）依次压入数组头部，确保展示顺序
+            for (let i = 0; i < totalFiles; i++) {
+                const file = files[i];
+                const isVideoFile = file.type.startsWith('video/');
+                
+                // 智能命名机制：单张不加后缀，多张自动加序号
+                const currentTitleZh = totalFiles > 1 ? `${baseTitleZh}_${i + 1}` : baseTitleZh;
+                const currentTitleEn = totalFiles > 1 ? `${baseTitleEn}_${i + 1}` : baseTitleEn;
 
-                if (isVideoFile) {
-                    imageItems.unshift({
-                        id: Date.now(), type: "video", category: selectedCat,
-                        title_zh: titleZh, title_en: titleEn,
-                        prompt_zh: pzh, prompt_en: pen,
-                        media_src: fileDataUrl, drive_link: driveUrl
-                    });
-                    finalizePublishProcess();
-                } else {
-                    const img = new Image();
-                    img.src = fileDataUrl;
-                    img.onload = function() {
-                        const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
-                        const TARGET_LONG_SIDE = 1200;
-                        let width = img.width; let height = img.height;
-                        if (width > height ? width > TARGET_LONG_SIDE : height > TARGET_LONG_SIDE) {
-                            if (width > height) { height *= TARGET_LONG_SIDE / width; width = TARGET_LONG_SIDE; }
-                            else { width *= TARGET_LONG_SIDE / height; height = TARGET_LONG_SIDE; }
-                        }
-                        canvas.width = width; canvas.height = height;
-                        ctx.drawImage(img, 0, 0, width, height);
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = function(e) {
+                    const fileDataUrl = e.target.result;
 
-                        ctx.save(); ctx.font = selectedFont; ctx.fillStyle = "rgba(255, 255, 255, 0.45)";
-                        ctx.shadowColor = "rgba(0, 0, 0, 0.25)"; ctx.shadowBlur = 4;
-                        const fullText = "WWW." + wmText.toUpperCase();
-                        ctx.fillText(fullText, width - ctx.measureText(fullText).width - 24, height - 24);
-                        ctx.restore();
-
-                        const finalizedWebpData = canvas.toDataURL('image/webp', 0.82);
-
+                    if (isVideoFile) {
+                        // 视频不处理水印，直接发布
                         imageItems.unshift({
-                            id: Date.now(), type: "image", category: selectedCat,
-                            title_zh: titleZh, title_en: titleEn,
+                            id: Date.now() + i, // 防止高频碰撞 id 重复
+                            type: "video", category: selectedCat,
+                            title_zh: currentTitleZh, title_en: currentTitleEn,
                             prompt_zh: pzh, prompt_en: pen,
-                            media_src: finalizedWebpData, drive_link: driveUrl
+                            media_src: fileDataUrl, drive_link: driveUrl
                         });
-                        finalizePublishProcess();
+                        checkPipelineProgress();
+                    } else {
+                        // 图片自动进入 Canvas 批量压缩加水印车间
+                        const img = new Image();
+                        img.src = fileDataUrl;
+                        img.onload = function() {
+                            const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
+                            const TARGET_LONG_SIDE = 1200;
+                            let width = img.width; let height = img.height;
+                            if (width > height ? width > TARGET_LONG_SIDE : height > TARGET_LONG_SIDE) {
+                                if (width > height) { height *= TARGET_LONG_SIDE / width; width = TARGET_LONG_SIDE; }
+                                else { width *= TARGET_LONG_SIDE / height; height = TARGET_LONG_SIDE; }
+                            }
+                            canvas.width = width; canvas.height = height;
+                            ctx.drawImage(img, 0, 0, width, height);
+
+                            ctx.save(); ctx.font = selectedFont; ctx.fillStyle = "rgba(255, 255, 255, 0.45)";
+                            ctx.shadowColor = "rgba(0, 0, 0, 0.25)"; ctx.shadowBlur = 4;
+                            const fullText = "WWW." + wmText.toUpperCase();
+                            ctx.fillText(fullText, width - ctx.measureText(fullText).width - 24, height - 24);
+                            ctx.restore();
+
+                            const finalizedWebpData = canvas.toDataURL('image/webp', 0.82);
+
+                            imageItems.unshift({
+                                id: Date.now() + i,
+                                type: "image", category: selectedCat,
+                                title_zh: currentTitleZh, title_en: currentTitleEn,
+                                prompt_zh: pzh, prompt_en: pen,
+                                media_src: finalizedWebpData, drive_link: driveUrl
+                            });
+                            checkPipelineProgress();
+                        }
                     }
                 }
             }
 
-            function finalizePublishProcess() {
-                renderGallery(); closeAdminPanelDirectly();
-                document.getElementById('cloudDriveUrl').value = '';
-                document.getElementById('inputTitleZh').value = ''; document.getElementById('inputTitleEn').value = '';
-                document.getElementById('promptZh').value = ''; document.getElementById('promptEn').value = '';
-                fileInput.value = '';
-                alert("新画作/短片发布成功！");
+            // 检查异步队列是否全部收工
+            function checkPipelineProgress() {
+                processedCount++;
+                if (processedCount === totalFiles) {
+                    finalizeBatchPublishProcess(totalFiles);
+                }
             }
         }
 
+        function finalizeBatchPublishProcess(count) {
+            renderGallery(); 
+            renderAdminConsole();
+            closeAdminPanelDirectly();
+            // 清理输入框，保持界面整洁
+            document.getElementById('cloudDriveUrl').value = '';
+            document.getElementById('inputTitleZh').value = ''; 
+            document.getElementById('inputTitleEn').value = '';
+            document.getElementById('promptZh').value = ''; 
+            document.getElementById('promptEn').value = '';
+            document.getElementById('mediaFileInput').value = '';
+            alert(`🎉 恭喜！本次上传的 ${count} 个 AI 创意资产已全部完成智能加水印、格式转换并上架！`);
+        }
+
+        // 前台渲染
         function renderGallery() {
             const container = document.getElementById('galleryBox'); container.innerHTML = '';
             const filteredItems = imageItems.filter(item => {
